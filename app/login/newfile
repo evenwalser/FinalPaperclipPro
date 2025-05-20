@@ -1,0 +1,141 @@
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE stores (
+    store_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+    store_name VARCHAR(255) NOT NULL,
+    contact_details TEXT,
+    address TEXT,
+    store_logo VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE items (
+    item_id SERIAL PRIMARY KEY,
+    store_id INT REFERENCES stores(store_id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(100),
+    price DECIMAL(10,2) NOT NULL,
+    available_in_store BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+
+
+CREATE TABLE inventory (
+    inventory_id SERIAL PRIMARY KEY,
+    item_id INT REFERENCES items(item_id) ON DELETE CASCADE,
+    quantity INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE transactions (
+    transaction_id SERIAL PRIMARY KEY,
+    store_id INT REFERENCES stores(store_id) ON DELETE CASCADE,
+    total_amount DECIMAL(10,2) NOT NULL,
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE transaction_items (
+    transaction_item_id SERIAL PRIMARY KEY,
+    transaction_id INT REFERENCES transactions(transaction_id) ON DELETE CASCADE,
+    item_id INT REFERENCES items(item_id) ON DELETE CASCADE,
+    quantity INT NOT NULL,
+    price DECIMAL(10,2) NOT NULL
+);
+
+CREATE TABLE paperclip_sales (
+    sale_id SERIAL PRIMARY KEY,
+    item_id INT REFERENCES items(item_id) ON DELETE CASCADE,
+    sale_price DECIMAL(10,2) NOT NULL,
+    sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(50) DEFAULT 'pending'
+);
+
+CREATE TABLE notifications (
+    notification_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+
+
+
+
+
+
+
+-- Categories Table (supporting three-level deep categorization)
+CREATE TABLE categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    parent_id UUID REFERENCES categories(id),
+    level INTEGER CHECK (level IN (1, 2, 3)),
+    display_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Items Table
+CREATE TABLE items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    store_id UUID REFERENCES stores(id) NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL,
+    category TEXT, -- Changed from category_id to match your current implementation
+    subcategory1 TEXT, -- Changed from subcategory1_id to match your current implementation
+    subcategory2 TEXT, -- Changed from subcategory2_id to match your current implementation
+    condition TEXT CHECK (condition IN ('New', 'Like New', 'Very Good', 'Good', 'Fair')),
+    size TEXT,
+    status TEXT DEFAULT 'available' CHECK (status IN ('available', 'low_stock', 'out_of_stock')),
+    available_in_store BOOLEAN DEFAULT TRUE,
+    list_on_paperclip BOOLEAN DEFAULT TRUE,
+    created_by UUID REFERENCES store_owners(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Item Images Table
+CREATE TABLE item_images (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    item_id UUID REFERENCES items(id) NOT NULL,
+    image_url TEXT NOT NULL,
+    display_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Row Level Security Policies
+ALTER TABLE items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE item_images ENABLE ROW LEVEL SECURITY;
+
+-- Policies for items table
+CREATE POLICY "Enable store owners to CRUD their store items"
+ON items FOR ALL
+USING (store_id IN (
+    SELECT store_id FROM store_owners
+    WHERE user_id = auth.uid()
+));
+
+-- Policies for item_images table
+CREATE POLICY "Enable access to item images through items"
+ON item_images FOR ALL
+USING (item_id IN (
+    SELECT id FROM items
+    WHERE store_id IN (
+        SELECT store_id FROM store_owners
+        WHERE user_id = auth.uid()
+    )
+));

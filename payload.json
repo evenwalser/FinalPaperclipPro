@@ -1,0 +1,17 @@
+{
+  "event": "item_created",
+  "item": {
+    "id": "item_12798",
+    "userId": "D2A50B9416724E79B5974F0B73F8DB3A",
+    "name": "Cool Jacket",
+    "description": "A very cool jacket.",
+    "price": "49.99",
+    "quantity": 1,
+    "categoryId": "49",
+    "condition_type": 0,
+    "size": "M",
+    "brand": "CoolBrand",
+    "tags": ["jacket", "fashion"],
+    "media": ["https://example.com/image1.jpg"]
+  }
+}
