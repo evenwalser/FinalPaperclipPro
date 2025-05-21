@@ -119,6 +119,7 @@ export async function syncItemsWithPaperclip(userId: string) {
 
     // Sync Paperclip items to local database
     for (const item of paperclipItems.data) {
+        console.log("🚀 ~ syncItemsWithPaperclip ~ item:", item)
         console.log("🚀 ~ syncItemsWithPaperclip ~ paperclipItems:", item.id)
       const { data: existingItem, error: fetchError } = await supabase
         .from("items")
@@ -189,7 +190,6 @@ export async function syncItemsWithPaperclip(userId: string) {
         }
         localItemId = existingItem.id;
       }
-
       // Handle media
       if (item.media && Array.isArray(item.media)) {
         // Delete existing images
@@ -211,6 +211,7 @@ export async function syncItemsWithPaperclip(userId: string) {
           image_url: url,
           display_order: index,
         }));
+        console.log("🚀 ~ imageInserts ~ imageInserts:", imageInserts)
 
         const { error: imageError } = await supabase
           .from("item_images")

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { SquareClient, SquareEnvironment } from 'square';
 import { createClient } from '@/utils/supabase/server';
+import { v4 as uuidv4 } from "uuid";
 
 // Securely initialize the Square client using environment variables
 const client = new SquareClient({
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
     // Create payment link
     const amountCents = Math.round(Number(amount) * 100);
     const response = await client.checkout.paymentLinks.create({
-      idempotencyKey: crypto.randomUUID(),
+      idempotencyKey: uuidv4(),
       quickPay: {
         name: `Order #${orderId}`,
         priceMoney: {

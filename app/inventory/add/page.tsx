@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/utils/supabase/client";
@@ -323,7 +324,7 @@ export default function AddItemPage() {
       const formData = new FormData();
       for (const image of images) {
         if (!isImageFile(image.url)) continue;
-        const filePath = `temp/${Date.now()}-${crypto.randomUUID()}.jpg`;
+        const filePath = `temp/${Date.now()}-${uuidv4()}.jpg`;
         const fileData = image.file || (await (await fetch(image.url)).blob());
         const { error } = await supabase.storage
           .from("item-images")
@@ -508,7 +509,7 @@ export default function AddItemPage() {
           }
           const fileName = `${user.id}/${
             item.id
-          }/${crypto.randomUUID()}.${fileExt}`;
+          }/${uuidv4()}.${fileExt}`;
           const fileData =
             image.file || (await (await fetch(image.url)).blob());
           const contentType = image.file

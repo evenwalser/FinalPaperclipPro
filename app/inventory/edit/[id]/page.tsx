@@ -369,18 +369,22 @@ export default function EditItemPage() {
     }
     const filteredImages = images.filter((image) => {
       const url = image.image_url || "";
-      
+
       // Check file extensions
       if (/\.(jpg|jpeg|png|gif|webp)$/i.test(url)) return true;
-      
+
       // Check Shopify URLs
-      if (url.includes('shopify.com')) {
-        return url.includes('/files/') && !url.includes('.mp4') && !url.includes('.webm');
+      if (url.includes("shopify.com")) {
+        return (
+          url.includes("/files/") &&
+          !url.includes(".mp4") &&
+          !url.includes(".webm")
+        );
       }
-      
+
       return false;
     });
-    
+
     if (filteredImages.length === 0) {
       newErrors.images = "At least one image is required";
       hasErrors = true;
@@ -414,7 +418,7 @@ export default function EditItemPage() {
           condition: itemDetails.condition,
           size: itemDetails.size,
           brand: itemDetails.brand,
-          logo_url: logoUrl,  
+          logo_url: logoUrl,
           age: itemDetails.age,
           color: itemDetails.color,
           age_id: selectedAge?.id || null,
@@ -441,9 +445,7 @@ export default function EditItemPage() {
 
           const newId = uuidv4();
           const fileExt = image.image_url.split(".").pop();
-          const fileName = `${user?.id}/${
-            item.id
-          }/${crypto.randomUUID()}.${fileExt}`;
+          const fileName = `${user?.id}/${item.id}/${uuidv4()}.${fileExt}`; // Use uuidv4() for filename
           let fileData: Blob;
 
           if (image.file) {
@@ -530,7 +532,7 @@ export default function EditItemPage() {
           formData.append("color", itemDetails.color || "");
           formData.append("tags", JSON.stringify(selectedTags));
           formData.append("categoryId", paperclipCategoryId.toString());
-          formData.append("colorId", selectedColor?.id || "")
+          formData.append("colorId", selectedColor?.id || "");
 
           // Append image files
           await Promise.all(
