@@ -133,7 +133,7 @@ export async function GET(request: Request) {
 
   // Redirect
   const forwardedHost = request.headers.get('x-forwarded-host');
-  const isLocalEnv = process.env.NODE_ENV === 'development';
+  const isLocalEnv = true;
 
   if (isLocalEnv) {
     return NextResponse.redirect(`${origin}${next}`);
