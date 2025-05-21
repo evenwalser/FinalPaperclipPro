@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
+import eBayLogo from "../../../public/ebay_logo.png";
 import { useEffect, useState } from "react";
 
 export function EbayIntegrationSettings() {
@@ -43,7 +44,7 @@ export function EbayIntegrationSettings() {
       <CardContent className="space-y-6">
         <div className="flex flex-col items-center space-y-4">
           <Image
-            src="https://media-hosting.imagekit.io/458c81de251b4b6f/download.png?Expires=1841230766&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=D5yrjCgtpV58G~ezYEYnCezOWuGB8~WOpSoJO5YM~aWKDGOmxbcrHRWecBiuCz~ZSsDgOXZwTsWSuQ502iliuUoDNfrl-nENihUX5M02xy0AONmI6-q7ZGx8A4nNKTJV8o7rzt0yCnv8a9FrqWS~gfL7fVESNO2gzKRNzwhULCmRXRCH0Q13SicQvdg8Ek~UbPaqP~zQuKkj51rxdwUWFUNRx80-VtfdCc~e-FCFxtmVlHEjL5tuBqsj4oUqoG500KT25teWl1yFJ29oRP7KpQmBFo3aQ0w0GciJg0Tzo2D98OBGSCJDz7jqj39HMxEpWRGqtmfksHndejucZ~553A__"
+            src={eBayLogo}
             alt="Paperclip Logo"
             width={200}
             height={40}

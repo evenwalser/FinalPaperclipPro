@@ -205,7 +205,7 @@ export default function POSPage() {
         }
       } catch (error) {
         console.error("Error fetching POS settings:", error);
-        toast.error("Failed to load POS settings");
+        // toast.error("Failed to load POS settings");
       }
     };
 

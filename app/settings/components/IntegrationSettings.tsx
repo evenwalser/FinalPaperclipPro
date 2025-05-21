@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import shopifyLogo from "../../../public/shopify_logo.png";
 import Image from 'next/image'
 
 export function IntegrationSettings() {
@@ -46,8 +47,8 @@ export function IntegrationSettings() {
       <CardContent className="space-y-6">
         <div className="flex flex-col items-center space-y-4">
           <Image
-            src="https://media-hosting.imagekit.io/3ee77e1121934ae1/e6606031b2ba7efa33a8657f629ec1eb.png?Expires=1837692607&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=oalvOfzURD2f3caEmxS2DNNlLINuUxhSzjLo6z~pAAmT6LZ7~cFlDT1rTDllNHx7IzPMsrJYa~OXdSAyCT8w9hISTtmhLKDPDVWJfLvllEl2NIrngZqWW8u5TYHhNGc6Y6Mo8XggZY6Iw1ILNQIL4WIYyBwv1tkPxAS2vdVW12~b-GvL82nsDuQ8vMa5E4eOJtJwmjFW9tP08-BGpnkY4p4bOTdYZzWRPm3fekYYaYQBczeCqwC0-E8xjPmCZMexAljdNBUrl8IL8gLbDpLFUfD3Q9rXWd6-sEnbmix7AnvtkGnC6GQ3QQLko6LfkzH3nrSAO97GYCJ0S~Qn7EzfXw__"
-            alt="Paperclip Logo"
+            src={shopifyLogo}
+            alt="shopify Logo"
             width={200}
             height={40}
             className="mb-4"
