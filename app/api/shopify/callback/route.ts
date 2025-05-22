@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { createShopifyProduct, getCategoryHierarchy, publishProduct } from "../create-product/route";
+import {
+  createShopifyProduct,
+  getCategoryHierarchy,
+  publishProduct,
+} from "../create-product/route";
 
 interface ShopifyProduct {
   id: number;
@@ -24,9 +28,13 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const shop = searchParams.get("shop");
+  const state = searchParams.get("state");
 
-  if (!code || !shop) {
-    return NextResponse.json({ error: "Missing code or shop" }, { status: 400 });
+  if (!code || !shop || !state) {
+    return NextResponse.json(
+      { error: "Missing code, shop, or state" },
+      { status: 400 }
+    );
   }
 
   const supabase = await createClient();
@@ -37,8 +45,28 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let storeId;
+  try {
+    const stateObj = JSON.parse(decodeURIComponent(state));
+    storeId = stateObj.storeId;
+  } catch (error) {
+    return NextResponse.json({ error: "Invalid state parameter" }, { status: 400 });
+  }
+
+  // Check if shopify_shop_name is already in use by another store
+  const { data: existingStore } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("shopify_shop_name", shop)
+    .neq("id", storeId) // Exclude the current store
+    .single();
+
+  if (existingStore) {
+    return NextResponse.json({ error: "This Shopify shop is already connected to another store" }, { status: 409 });
+  }
+
   // Exchange code for access token
-  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -47,22 +75,27 @@ export async function GET(req: Request) {
       code,
     }),
   });
+const { access_token } = await response.json();
 
-  const { access_token } = await response.json();
-
-  const { data: store } = await supabase
+  // Update the specific store
+  const { data: store, error } = await supabase
     .from("stores")
     .update({
       shopify_access_token: access_token,
       shopify_shop_name: shop,
-      last_sync_time: new Date().toISOString()
+      last_sync_time: new Date().toISOString(),
     })
-    .eq("owner_id", user.id)
+    .eq("id", storeId)
+    .eq("owner_id", user.id) // Ensure the user owns the store
     .select()
     .single();
 
-    console.log("🚀 ~ GET ~ access_token:", access_token)
-    console.log("🚀 ~ GET ~ shop:", shop)
+  if (error || !store) {
+    return NextResponse.json({ error: "Store update failed or not found" }, { status: 404 });
+  }
+
+  console.log("🚀 ~ GET ~ access_token:", access_token);
+  console.log("🚀 ~ GET ~ shop:", shop);
 
   // Import all existing products
   try {
@@ -81,9 +114,14 @@ export async function GET(req: Request) {
   return NextResponse.redirect(redirectURL);
 }
 
-
-async function exportExistingItemsToShopify(shopName: string, accessToken: string, storeId: string) {
-  console.log("Starting export of existing Paperclip Retail items to Shopify...");
+async function exportExistingItemsToShopify(
+  shopName: string,
+  accessToken: string,
+  storeId: string
+) {
+  console.log(
+    "Starting export of existing Paperclip Retail items to Shopify..."
+  );
   const supabase = await createClient();
 
   // Fetch items that haven't been synced to Shopify
@@ -91,9 +129,9 @@ async function exportExistingItemsToShopify(shopName: string, accessToken: strin
     .from("items")
     .select("*")
     .eq("store_id", storeId)
-    .is("shopify_product_id", null)
-    // Optionally filter by list_on_shopify if it exists in your schema
-    // .eq("list_on_shopify", true);
+    .is("shopify_product_id", null);
+  // Optionally filter by list_on_shopify if it exists in your schema
+  // .eq("list_on_shopify", true);
 
   if (fetchError) {
     console.error("Error fetching items:", fetchError);
@@ -117,7 +155,10 @@ async function exportExistingItemsToShopify(shopName: string, accessToken: strin
       }
 
       // Fetch category hierarchy
-      const categoryHierarchy = await getCategoryHierarchy(item.category_id, supabase);
+      const categoryHierarchy = await getCategoryHierarchy(
+        item.category_id,
+        supabase
+      );
 
       // Create Shopify product
       const shopifyProduct = await createShopifyProduct(
@@ -144,11 +185,16 @@ async function exportExistingItemsToShopify(shopName: string, accessToken: strin
         .eq("id", item.id);
 
       if (updateError) {
-        console.error(`Error updating item ${item.id} with Shopify IDs:`, updateError);
+        console.error(
+          `Error updating item ${item.id} with Shopify IDs:`,
+          updateError
+        );
         continue; // Skip to next item on error
       }
 
-      console.log(`Successfully exported item ${item.id} to Shopify with product ID ${shopifyProduct.productId}`);
+      console.log(
+        `Successfully exported item ${item.id} to Shopify with product ID ${shopifyProduct.productId}`
+      );
     } catch (error) {
       console.error(`Error exporting item ${item.id} to Shopify:`, error);
     }
@@ -157,8 +203,11 @@ async function exportExistingItemsToShopify(shopName: string, accessToken: strin
   console.log("Completed exporting items to Shopify");
 }
 
-
-async function importExistingProducts(shopName: string, accessToken: string, storeId: string) {
+async function importExistingProducts(
+  shopName: string,
+  accessToken: string,
+  storeId: string
+) {
   console.log("Starting import of existing Shopify products...");
   let hasMoreProducts = true;
   let nextPageParams = "";
@@ -172,7 +221,7 @@ async function importExistingProducts(shopName: string, accessToken: string, sto
       source: "shopify",
       status: "processing",
       total_items: 0,
-      processed_items: 0
+      processed_items: 0,
     })
     .select()
     .single();
@@ -187,8 +236,8 @@ async function importExistingProducts(shopName: string, accessToken: string, sto
       const response = await fetch(productsUrl, {
         headers: {
           "X-Shopify-Access-Token": accessToken,
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       });
 
       if (!response.ok) {
@@ -198,9 +247,9 @@ async function importExistingProducts(shopName: string, accessToken: string, sto
       }
 
       const productsData = await response.json();
-      console.log("🚀 ~ importExistingProducts ~ productsData:", productsData)
+      console.log("🚀 ~ importExistingProducts ~ productsData:", productsData);
       const products = productsData.products;
-      console.log("🚀 ~ importExistingProducts ~ products:", products)
+      console.log("🚀 ~ importExistingProducts ~ products:", products);
 
       if (!products || products.length === 0) {
         hasMoreProducts = false;
@@ -218,37 +267,42 @@ async function importExistingProducts(shopName: string, accessToken: string, sto
       // Process each product
       for (const product of products) {
         try {
-          console.log("🚀 ~ importExistingProducts ~ product:", product)
+          console.log("🚀 ~ importExistingProducts ~ product:", product);
           // Add debug logging before webhook call
           console.log("Calling webhook with product:", {
             id: product.id,
-            title: product.title
+            title: product.title,
           });
-      
-          const webhookResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/shopify/webhooks`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-shopify-topic": "products/create",
-              "x-shopify-shop-domain": shopName,
-              // Add this header to bypass HMAC validation for internal calls
-              "x-internal-call": "true"
-            },
-            body: JSON.stringify(product)
-          });
-      
+
+          const webhookResponse = await fetch(
+            `${process.env.NEXT_PUBLIC_APP_URL}/api/shopify/webhooks`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-shopify-topic": "products/create",
+                "x-shopify-shop-domain": shopName,
+                // Add this header to bypass HMAC validation for internal calls
+                "x-internal-call": "true",
+              },
+              body: JSON.stringify(product),
+            }
+          );
+
           // Add response logging
           const responseText = await webhookResponse.text();
           console.log("Webhook response:", {
             status: webhookResponse.status,
             statusText: webhookResponse.statusText,
-            body: responseText
+            body: responseText,
           });
-      
+
           if (!webhookResponse.ok) {
-            throw new Error(`Webhook failed: ${webhookResponse.status} - ${responseText}`);
+            throw new Error(
+              `Webhook failed: ${webhookResponse.status} - ${responseText}`
+            );
           }
-          
+
           totalProcessed++;
           console.log(`Processed product ${totalProcessed}: ${product.title}`);
         } catch (error) {
@@ -283,34 +337,35 @@ async function importExistingProducts(shopName: string, accessToken: string, sto
     // Update import job as completed
     await supabase
       .from("import_jobs")
-      .update({ 
+      .update({
         status: errorCount > 0 ? "completed_with_errors" : "completed",
         processed_items: totalProcessed,
         error_count: errorCount,
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
       })
       .eq("id", importJob.id);
 
-    console.log(`Imported ${totalProcessed} products from Shopify with ${errorCount} errors`);
-    
+    console.log(
+      `Imported ${totalProcessed} products from Shopify with ${errorCount} errors`
+    );
+
     // Update the store's last sync time
     await supabase
       .from("stores")
       .update({ last_sync_time: new Date().toISOString() })
       .eq("id", storeId);
-
   } catch (error: any) {
     console.error("Error during product import:", error);
-    
+
     // Update import job as failed
     await supabase
       .from("import_jobs")
-      .update({ 
+      .update({
         status: "failed",
         processed_items: totalProcessed,
         error_count: errorCount,
         completed_at: new Date().toISOString(),
-        error_message: error.toString()
+        error_message: error.toString(),
       })
       .eq("id", importJob.id);
   }
