@@ -1,0 +1,38 @@
+name: AI Task Workflow
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  process-ai-task:
+    if: github.event.label.name == 'ai-task'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Extract issue details
+        id: issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = context.payload.issue;
+            core.setOutput('issue_number', issue.number);
+            core.setOutput('issue_title', issue.title);
+            core.setOutput('issue_body', issue.body);
+            core.setOutput('issue_url', issue.html_url);
+
+      - name: Send prompt to Devin
+        env:
+          DEVIN_API_KEY: ${{ secrets.DEVIN_API_KEY }}
+        run: |
+          curl -X POST https://api.devin.ai/v1/sessions \
+            -H "Authorization: Bearer $DEVIN_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "prompt": "Generate code for issue ${{ steps.issue.outputs.issue_url }}: ${{ steps.issue.outputs.issue_title }}\n\n${{ steps.issue.outputs.issue_body }}",
+              "repository": "${{ github.repository }}",
+              "branch": "ai-task-${{ steps.issue.outputs.issue_number }}",
+              "idempotent": true
+            }'
