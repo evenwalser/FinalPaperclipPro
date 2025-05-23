@@ -97,6 +97,14 @@ const { access_token } = await response.json();
   console.log("🚀 ~ GET ~ access_token:", access_token);
   console.log("🚀 ~ GET ~ shop:", shop);
 
+  const webhookTopics = [
+    "products/create",
+    "products/update",
+    "products/delete",
+    "inventory_levels/update",
+  ];
+  await registerWebhooks(shop, access_token, webhookTopics);
+
   // Import all existing products
   try {
     await importExistingProducts(shop, access_token, store.id);
@@ -113,6 +121,107 @@ const { access_token } = await response.json();
   const redirectURL = new URL("/inventory", process.env.NEXT_PUBLIC_APP_URL);
   return NextResponse.redirect(redirectURL);
 }
+
+interface ShopifyWebhook {
+  topic: string;
+  address: string;
+  format: string;
+}
+
+interface WebhookResponse {
+  webhooks: {
+    topic: string;
+    address: string;
+  }[];
+}
+
+async function registerWebhooks(
+  shop: string,
+  accessToken: string,
+  topics: string[]
+): Promise<void> {
+  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/shopify/webhooks`;
+
+  try {
+    // Fetch existing webhooks
+    const response = await fetch(`https://${shop}/admin/api/2023-10/webhooks.json`, {
+      method: "GET",
+      headers: {
+        "X-Shopify-Access-Token": accessToken,
+      },
+    });
+
+    if (response.ok) {
+      const data: WebhookResponse = await response.json();
+      const existingWebhooks = data.webhooks || [];
+      const existingTopics = new Set(
+        existingWebhooks
+          .filter((webhook) => webhook.address === webhookUrl)
+          .map((webhook) => webhook.topic)
+      );
+
+      // Register missing webhooks
+      for (const topic of topics) {
+        if (existingTopics.has(topic)) {
+          console.log(`Webhook for ${topic} already exists, skipping registration`);
+          continue;
+        }
+
+        const postResponse = await fetch(`https://${shop}/admin/api/2023-10/webhooks.json`, {
+          method: "POST",
+          headers: {
+            "X-Shopify-Access-Token": accessToken,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            webhook: {
+              topic: topic,
+              address: webhookUrl,
+              format: "json",
+            } as ShopifyWebhook,
+          }),
+        });
+        console.log("🚀 ~ postResponse:", postResponse)
+
+        if (!postResponse.ok) {
+          const errorData = await postResponse.json();
+          console.error(`Failed to register webhook for ${topic}:`, errorData);
+        } else {
+          console.log(`Successfully registered webhook for ${topic}`);
+        }
+      }
+    } else {
+      console.error("Failed to fetch existing webhooks:", await response.text());
+      // Fallback: Attempt to register all topics
+      for (const topic of topics) {
+        const postResponse = await fetch(`https://${shop}/admin/api/2023-10/webhooks.json`, {
+          method: "POST",
+          headers: {
+            "X-Shopify-Access-Token": accessToken,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            webhook: {
+              topic: topic,
+              address: webhookUrl,
+              format: "json",
+            } as ShopifyWebhook,
+          }),
+        });
+
+        if (!postResponse.ok) {
+          const errorData = await postResponse.json();
+          console.error(`Failed to register webhook for ${topic}:`, errorData);
+        } else {
+          console.log(`Successfully registered webhook for ${topic}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error during webhook registration:", error);
+  }
+}
+
 
 async function exportExistingItemsToShopify(
   shopName: string,
