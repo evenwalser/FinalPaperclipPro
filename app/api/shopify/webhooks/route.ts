@@ -695,7 +695,7 @@ export async function POST(req: Request) {
         );
       }
       // Verify the webhook's authenticity
-      const apiSecret = process.env.SHOPIFY_WEBHOOK_SECRET;
+      const apiSecret = process.env.SHOPIFY_API_SECRET;
 
       if (!apiSecret) {
         return NextResponse.json(
