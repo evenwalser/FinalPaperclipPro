@@ -1,0 +1,21 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "ci/ai-workflow-setup",
+    "claude/code-evaluation-01HGecCLse5Kkyb9boeYzwiD",
+    "main",
+    "message-offer-flow"
+  ],
+  "parent": {
+    "ci/ai-workflow-setup": "main",
+    "claude/code-evaluation-01HGecCLse5Kkyb9boeYzwiD": "main",
+    "main": null,
+    "message-offer-flow": "main"
+  },
+  "order": [
+    "main",
+    "ci/ai-workflow-setup",
+    "claude/code-evaluation-01HGecCLse5Kkyb9boeYzwiD",
+    "message-offer-flow"
+  ]
+}
