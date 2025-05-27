@@ -22,9 +22,10 @@ export default function LoginPage({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState({
-    email: '',
-    password: '',
-    confirmPassword: ''
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -32,22 +33,26 @@ export default function LoginPage({
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const name = formData.get("name") as string;
+    const isNameValid = isLogin ? true : validateName(name);
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
 
     if (!isLogin) {
-      const confirmPassword = formData.get('confirmPassword') as string;
-      const isConfirmPasswordValid = validateConfirmPassword(password, confirmPassword);
+      const confirmPassword = formData.get("confirmPassword") as string;
+      const isConfirmPasswordValid = validateConfirmPassword(
+        password,
+        confirmPassword
+      );
 
-      if (!isEmailValid || !isPasswordValid || !isConfirmPasswordValid) {
-        setLoading(false);
-        return;
-      }
-    } else {
-      if (!isEmailValid || !isPasswordValid) {
+      if (
+        !isNameValid ||
+        !isEmailValid ||
+        !isPasswordValid ||
+        !isConfirmPasswordValid
+      ) {
         setLoading(false);
         return;
       }
@@ -68,27 +73,48 @@ export default function LoginPage({
     }
   };
 
+  const validateName = (name: string) => {
+    if (!name.trim()) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        name: "Full name is required",
+      }));
+      return false;
+    }
+    setValidationErrors((prev) => ({ ...prev, name: "" }));
+    return true;
+  };
+
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) {
-      setValidationErrors(prev => ({ ...prev, email: 'Email is required' }));
+      setValidationErrors((prev) => ({ ...prev, email: "Email is required" }));
       return false;
     }
     if (!emailRegex.test(email)) {
-      setValidationErrors(prev => ({ ...prev, email: 'Please enter a valid email address' }));
+      setValidationErrors((prev) => ({
+        ...prev,
+        email: "Please enter a valid email address",
+      }));
       return false;
     }
-    setValidationErrors(prev => ({ ...prev, email: '' }));
+    setValidationErrors((prev) => ({ ...prev, email: "" }));
     return true;
   };
 
   const validatePassword = (password: string) => {
     if (!password) {
-      setValidationErrors(prev => ({ ...prev, password: 'Password is required' }));
+      setValidationErrors((prev) => ({
+        ...prev,
+        password: "Password is required",
+      }));
       return false;
     }
     if (password.length < 6) {
-      setValidationErrors(prev => ({ ...prev, password: 'Password must be at least 6 characters' }));
+      setValidationErrors((prev) => ({
+        ...prev,
+        password: "Password must be at least 6 characters",
+      }));
       return false;
     }
     // if (!/[A-Z]/.test(password)) {
@@ -96,23 +122,35 @@ export default function LoginPage({
     //   return false;
     // }
     if (!/[0-9]/.test(password)) {
-      setValidationErrors(prev => ({ ...prev, password: 'Password must contain at least one number' }));
+      setValidationErrors((prev) => ({
+        ...prev,
+        password: "Password must contain at least one number",
+      }));
       return false;
     }
-    setValidationErrors(prev => ({ ...prev, password: '' }));
+    setValidationErrors((prev) => ({ ...prev, password: "" }));
     return true;
   };
 
-  const validateConfirmPassword = (password: string, confirmPassword: string) => {
+  const validateConfirmPassword = (
+    password: string,
+    confirmPassword: string
+  ) => {
     if (!confirmPassword) {
-      setValidationErrors(prev => ({ ...prev, confirmPassword: 'Please confirm your password' }));
+      setValidationErrors((prev) => ({
+        ...prev,
+        confirmPassword: "Please confirm your password",
+      }));
       return false;
     }
     if (password !== confirmPassword) {
-      setValidationErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match' }));
+      setValidationErrors((prev) => ({
+        ...prev,
+        confirmPassword: "Passwords do not match",
+      }));
       return false;
     }
-    setValidationErrors(prev => ({ ...prev, confirmPassword: '' }));
+    setValidationErrors((prev) => ({ ...prev, confirmPassword: "" }));
     return true;
   };
 
@@ -128,10 +166,13 @@ export default function LoginPage({
     validatePassword(password);
   };
 
-  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleConfirmPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const confirmPassword = e.target.value.replace(/\s+/g, "");
     e.target.value = confirmPassword;
-    const password = (document.getElementById('password') as HTMLInputElement)?.value;
+    const password = (document.getElementById("password") as HTMLInputElement)
+      ?.value;
     validateConfirmPassword(password, confirmPassword);
   };
 
@@ -171,7 +212,9 @@ export default function LoginPage({
 
           {/* Welcome Text */}
           <div className="text-left !mt-[20px] sm:!mt-[60px] lg:!mt-[120px]">
-            <h2 className="text-3xl font-[600] text-[#181D27] mb-[12px]">Welcome Back</h2>
+            <h2 className="text-3xl font-[600] text-[#181D27] mb-[12px]">
+              Welcome Back
+            </h2>
             <p className="text-[14px] text-[#535862]">
               Enter the details below to access the dashboard
             </p>
@@ -256,41 +299,63 @@ export default function LoginPage({
           <form onSubmit={handleSubmit} className="!mt-[20px] lg:!mt-[40px]">
             {!isLogin && (
               <div>
-                <label htmlFor="name" className="block text-[14px] font-[500] text-[#474747] mb-[6px]">
+                <label
+                  htmlFor="name"
+                  className="block text-[14px] font-[500] text-[#474747] mb-[6px]"
+                >
                   Full Name*
                 </label>
                 <Input
                   id="name"
                   name="name"
                   type="text"
-                  className="h-12 mt-1 rounded-[12px] text-[#474747] border-[#D5D7DA] !bg-[#fff] placeholder:text-[#717680] focus:border-[#F71D3B] focus:outline-hidden"
+                  className={`h-12 mt-1 rounded-[12px] text-[#474747] border-[#D5D7DA] !bg-[#fff] placeholder:text-[#717680] focus:border-[#F71D3B] focus:outline-hidden ${
+                    validationErrors.name ? "border-red-500" : ""
+                  }`}
                   placeholder="Enter your full name"
+                  onChange={(e) => validateName(e.target.value)}
                 />
+                {validationErrors.name && (
+                  <div className="mt-[6px]">
+                    <p className="text-[#535862] text-[14px] font-[400]">
+                      {validationErrors.name}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
             <div className={!isLogin ? "!mt-[14px]" : ""}>
-              <label htmlFor="email" className="block text-[14px] font-[500] text-[#474747] mb-[6px]">
+              <label
+                htmlFor="email"
+                className="block text-[14px] font-[500] text-[#474747] mb-[6px]"
+              >
                 Email*
               </label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                className={`h-12 mt-1 rounded-[12px] border-[#D5D7DA] text-[#474747] !bg-[#fff] focus:border-[#F71D3B] focus:outline-hidden placeholder:text-[#717680] ${validationErrors.email ? 'border-red-500' : ''
-                  }`}
+                className={`h-12 mt-1 rounded-[12px] border-[#D5D7DA] text-[#474747] !bg-[#fff] focus:border-[#F71D3B] focus:outline-hidden placeholder:text-[#717680] ${
+                  validationErrors.email ? "border-red-500" : ""
+                }`}
                 placeholder="Enter your work email"
                 onChange={handleEmailChange}
               />
               {validationErrors.email && (
                 <div className="mt-[6px]">
-                  <p className="text-[#535862] text-[14px] font-[400]">{validationErrors.email}</p>
+                  <p className="text-[#535862] text-[14px] font-[400]">
+                    {validationErrors.email}
+                  </p>
                 </div>
               )}
             </div>
 
             <div className="!mt-[14px] relative">
-              <label htmlFor="password" className="block text-[14px] font-[500] text-[#474747] mb-[6px]">
+              <label
+                htmlFor="password"
+                className="block text-[14px] font-[500] text-[#474747] mb-[6px]"
+              >
                 Password*
               </label>
               <div className="relative">
@@ -298,8 +363,9 @@ export default function LoginPage({
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  className={`h-12 mt-1 rounded-[12px] border-[#D5D7DA] text-[#474747] !bg-[#fff] pr-10 focus:border-[#F71D3B] focus:outline-hidden placeholder:text-[#717680] ${validationErrors.password ? 'border-red-500' : ''
-                    }`}
+                  className={`h-12 mt-1 rounded-[12px] border-[#D5D7DA] text-[#474747] !bg-[#fff] pr-10 focus:border-[#F71D3B] focus:outline-hidden placeholder:text-[#717680] ${
+                    validationErrors.password ? "border-red-500" : ""
+                  }`}
                   placeholder="Enter your password"
                   onChange={handlePasswordChange}
                 />
@@ -317,13 +383,18 @@ export default function LoginPage({
               </div>
               {validationErrors.password && (
                 <div className="mt-[6px]">
-                  <p className="text-[#535862] text-[14px] font-[400]">{validationErrors.password}</p>
+                  <p className="text-[#535862] text-[14px] font-[400]">
+                    {validationErrors.password}
+                  </p>
                 </div>
               )}
             </div>
             {!isLogin && (
               <div className="!mt-[14px] relative">
-                <label htmlFor="confirmPassword" className="block text-[14px] font-[500] text-[#474747] mb-[6px]">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-[14px] font-[500] text-[#474747] mb-[6px]"
+                >
                   Confirm Password*
                 </label>
                 <div className="relative">
@@ -332,8 +403,9 @@ export default function LoginPage({
                     name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     required
-                    className={`h-12 mt-1 rounded-[12px] text-[#474747] border-[#D5D7DA] !bg-[#fff] pr-10 focus:border-[#F71D3B] focus:outline-hidden placeholder:text-[#717680] ${validationErrors.confirmPassword ? 'border-red-500' : ''
-                      }`}
+                    className={`h-12 mt-1 rounded-[12px] text-[#474747] border-[#D5D7DA] !bg-[#fff] pr-10 focus:border-[#F71D3B] focus:outline-hidden placeholder:text-[#717680] ${
+                      validationErrors.confirmPassword ? "border-red-500" : ""
+                    }`}
                     placeholder="Confirm your password"
                     onChange={handleConfirmPasswordChange}
                   />
@@ -346,13 +418,14 @@ export default function LoginPage({
                       <EyeOffIcon className="h-5 w-5 text-[#A4A7AE]" />
                     ) : (
                       <EyeIcon className="h-5 w-5 text-[#A4A7AE]" />
-
                     )}
                   </button>
                 </div>
                 {validationErrors.confirmPassword && (
                   <div className="mt-[6px]">
-                    <p className="text-[#535862] text-[14px] font-[400]">{validationErrors.confirmPassword}</p>
+                    <p className="text-[#535862] text-[14px] font-[400]">
+                      {validationErrors.confirmPassword}
+                    </p>
                   </div>
                 )}
               </div>
@@ -374,11 +447,23 @@ export default function LoginPage({
               className="w-full h-12 bg-gradient-to-l from-[#F52044] to-[#E24AD9] text-white font-[600] rounded-[12px] text-[16px] !mt-[20px] lg:!mt-[40px]"
               disabled={loading}
             >
-              {loading ? "Processing..." : (isLogin ? "Log in" : "Sign up")}
+              {loading ? "Processing..." : isLogin ? "Log in" : "Sign up"}
               {!loading && (
                 <span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="16" viewBox="0 0 17 16" fill="none">
-                    <path d="M1.5 8H15.5M15.5 8L8.5 1M15.5 8L8.5 15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="17"
+                    height="16"
+                    viewBox="0 0 17 16"
+                    fill="none"
+                  >
+                    <path
+                      d="M1.5 8H15.5M15.5 8L8.5 1M15.5 8L8.5 15"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </span>
               )}
@@ -389,15 +474,25 @@ export default function LoginPage({
           <div className="text-center text-sm !mt-[12px]">
             {isLogin ? (
               <>
-                <span className="text-gray-600 text-[14px] text-[#535862] font-[400]">{`Don't`} have a PaperClip Retail account? </span>
-                <Link href="?tab=signup" className="text-[#F71D3B] font-[600] text-[14px]">
+                <span className="text-gray-600 text-[14px] text-[#535862] font-[400]">
+                  {`Don't`} have a PaperClip Retail account?{" "}
+                </span>
+                <Link
+                  href="?tab=signup"
+                  className="text-[#F71D3B] font-[600] text-[14px]"
+                >
                   Create Now
                 </Link>
               </>
             ) : (
               <>
-                <span className="text-gray-600 text-[14px] text-[#535862] font-[400]">Already have an account? </span>
-                <Link href="?tab=login" className="text-[#F71D3B] font-[600] text-[14px]">
+                <span className="text-gray-600 text-[14px] text-[#535862] font-[400]">
+                  Already have an account?{" "}
+                </span>
+                <Link
+                  href="?tab=login"
+                  className="text-[#F71D3B] font-[600] text-[14px]"
+                >
                   Log in
                 </Link>
               </>

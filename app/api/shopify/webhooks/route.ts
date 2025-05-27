@@ -127,6 +127,44 @@ interface Item {
   shopify_location_id?: string;
 }
 
+async function getOrCreateLookup(
+  supabase: any,
+  table: "colors" | "ages",
+  name: string
+): Promise<string | null> {
+  if (!name) return null;
+
+  // Try to find existing record
+  const { data: found, error: findErr } = await supabase
+    .from(table)
+    .select("id")
+    .eq("name", name)
+    .limit(1)
+    .single();
+
+  if (findErr && findErr.code !== "PGRST116") {
+    console.error(`Error finding ${table}:`, findErr);
+    return null;
+  }
+  if (found) {
+    return found.id;
+  }
+
+  // Insert new record
+  const { data: inserted, error: insertErr } = await supabase
+    .from(table)
+    .insert({ name })
+    .select("id")
+    .single();
+
+  if (insertErr) {
+    console.error(`Error inserting ${table}:`, insertErr);
+    return null;
+  }
+  return inserted.id;
+}
+
+
 // Map of Shopify topic to handler functions
 const topicHandlers: {
   [key: string]: (data: any, storeId: string) => Promise<any>;
@@ -1172,6 +1210,32 @@ async function handleProductCreate(
     }
   }
 
+    // Set age to null for Shopify products (extend logic if age is available)
+  
+
+  let color_id: string | null = null;
+  let age_id: string | null = null;
+
+  if (color) {
+    color_id = await getOrCreateLookup(supabase, "colors", color);
+  }
+
+   console.log(
+    "Product attributes - Size:",
+    size,
+    "Color:",
+    color,
+    "Condition:",
+    condition
+  );
+  console.log("Product price from Shopify (update):", mainVariant.price);
+  console.log(
+    "Product quantity from Shopify (update):",
+    mainVariant.inventory_quantity
+  );
+  console.log("Inventory item ID:", mainVariant.inventory_item_id);
+  console.log("Location ID:", data.location_id);
+
   // Validate condition against allowed values
   const validConditions = ["New", "Refurbished", "Used"] as const;
   type ValidCondition = (typeof validConditions)[number];
@@ -1248,6 +1312,7 @@ async function handleProductCreate(
       quantity: mainVariant.inventory_quantity || 0,
       size,
       color,
+      color_id,
       condition: normalizedCondition,
       shopify_product_id: data.admin_graphql_api_id,
       shopify_variant_id: mainVariant.admin_graphql_api_id,
@@ -1611,6 +1676,12 @@ async function handleProductUpdate(
     }
   }
 
+  let color_id: string | null = null;
+
+    if (color) {
+    color_id = await getOrCreateLookup(supabase, "colors", color);
+  }
+
   console.log(
     "Product attributes - Size:",
     size,
@@ -1699,6 +1770,7 @@ async function handleProductUpdate(
       quantity: mainVariant.inventory_quantity || 0,
       size,
       color,
+       color_id,
       condition: normalizedCondition,
       shopify_variant_id: mainVariant.admin_graphql_api_id,
       shopify_inventory_item_id: mainVariant.inventory_item_id
