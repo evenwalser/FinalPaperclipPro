@@ -35,6 +35,14 @@ import Image from "next/image";
 import { logout } from "@/app/login/actions";
 import { generateLinkingToken } from "@/app/marketplace/actions";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { QRCodeSVG } from "qrcode.react";
 
 interface UserData {
   id: string;
@@ -82,6 +90,9 @@ export function Header() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLinking, setIsLinking] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [linkingUrl, setLinkingUrl] = useState("");
   const supabase = createClient();
   const handleProfileClick = (path: string) => {
     // router.push(`/settings?tab=${path}`);
@@ -98,13 +109,18 @@ export function Header() {
       setIsLinking(true);
       const { deepLinkUrl } = await generateLinkingToken();
       
-      // Open the deep link URL directly
-      window.location.href = deepLinkUrl;
-      
-      // Show a message in case the app doesn't open
-      setTimeout(() => {
-        toast.info("If the app didn't open, please make sure you have the Paperclip Marketplace app installed on your device.");
-      }, 2000);
+      if (isDesktop) {
+        setLinkingUrl(deepLinkUrl);
+        setShowQRDialog(true);
+      } else {
+        // Open the deep link URL directly on mobile
+        window.location.href = deepLinkUrl;
+        
+        // Show a message in case the app doesn't open
+        setTimeout(() => {
+          toast.info("If the app didn't open, please make sure you have the Paperclip Marketplace app installed on your device.");
+        }, 2000);
+      }
     } catch (error) {
       console.error("Error generating linking token:", error);
       toast.error("Failed to generate linking URL");
@@ -166,6 +182,17 @@ export function Header() {
       supabase.removeChannel(channel);
     };
   }, [supabase, userData?.id]);
+
+  useEffect(() => {
+    const checkIsDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    
+    checkIsDesktop();
+    window.addEventListener('resize', checkIsDesktop);
+    
+    return () => window.removeEventListener('resize', checkIsDesktop);
+  }, []);
 
   if (error) {
     return <div>{error}</div>;
@@ -293,6 +320,27 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link Marketplace Account</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center p-6 bg-white rounded-lg">
+            {linkingUrl && (
+              <QRCodeSVG
+                value={linkingUrl}
+                size={256}
+                level="H"
+                includeMargin={true}
+              />
+            )}
+          </div>
+          <p className="text-sm text-gray-400 text-center mt-4">
+            Scan this QR code with your mobile device to link your marketplace account
+          </p>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }
