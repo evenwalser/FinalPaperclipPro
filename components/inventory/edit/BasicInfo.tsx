@@ -167,30 +167,13 @@ export default function BasicInfo({
             className={`pl-${logoUrl ? "10" : "3"}`} // Adjust padding dynamically
           />
         </div>
-
-        <div>
-        <Label htmlFor="age">Age</Label>
-        <Select value={age} onValueChange={(value) => onChange({ age: value })}>
-          <SelectTrigger id="age">
-            <SelectValue placeholder="Select age" />
-          </SelectTrigger>
-          <SelectContent>
-            {ages.map((ageOption) => (
-              <SelectItem key={ageOption.id} value={ageOption.name}>
-                {ageOption.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
         {/* Suggestions Dropdown */}
         {showSuggestions && brandSuggestions.length > 0 && (
-          <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+          <ul className="absolute z-10 w-full bg-[#060d19] border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
             {brandSuggestions.map((suggestion, index) => (
               <li
                 key={index}
-                className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                className="px-4 py-2 hover:bg-[#101e34] cursor-pointer flex items-center"
                 onClick={() => onBrandSelect(suggestion)}
               >
                 {suggestion.logo_url && (
@@ -208,6 +191,25 @@ export default function BasicInfo({
             ))}
           </ul>
         )}
+
+        <div>
+          <Label htmlFor="age">Age</Label>
+          <Select
+            value={age}
+            onValueChange={(value) => onChange({ age: value })}
+          >
+            <SelectTrigger id="age">
+              <SelectValue placeholder="Select age" />
+            </SelectTrigger>
+            <SelectContent>
+              {ages.map((ageOption) => (
+                <SelectItem key={ageOption.id} value={ageOption.name}>
+                  {ageOption.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* <div>
