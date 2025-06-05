@@ -331,13 +331,13 @@ export default function DetailsView({
           </SelectContent>
         </Select>
       </div>
-      <AvailabilityToggles
+      {/* <AvailabilityToggles
         availableInStore={availableInStore}
         onAvailableInStoreChange={onAvailableInStoreChange}
         listOnPaperclip={listOnPaperclip}
         onListOnPaperclipChange={onListOnPaperclipChange}
         onListOnShopifyChange={setListOnShopify}
-      />
+      /> */}
       {fieldErrors.images && (
         <p className="text-sm text-red-500 mt-1">{fieldErrors.images}</p>
       )}

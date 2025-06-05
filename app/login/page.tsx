@@ -110,21 +110,38 @@ export default function LoginPage({
       }));
       return false;
     }
-    if (password.length < 6) {
+    if (password.length < 8) {
       setValidationErrors((prev) => ({
         ...prev,
-        password: "Password must be at least 6 characters",
+        password: "Password must be at least 8 characters",
       }));
       return false;
     }
-    // if (!/[A-Z]/.test(password)) {
-    //   setValidationErrors(prev => ({ ...prev, password: 'Password must contain at least one uppercase letter' }));
-    //   return false;
-    // }
+    if (!/[A-Z]/.test(password)) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        password: "Password must contain at least one uppercase letter",
+      }));
+      return false;
+    }
+    if (!/[a-z]/.test(password)) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        password: "Password must contain at least one lowercase letter",
+      }));
+      return false;
+    }
     if (!/[0-9]/.test(password)) {
       setValidationErrors((prev) => ({
         ...prev,
         password: "Password must contain at least one number",
+      }));
+      return false;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        password: "Password must contain at least one special character (!@#$%^&*(),.?\":{}|<>)",
       }));
       return false;
     }
@@ -303,7 +320,8 @@ export default function LoginPage({
                   htmlFor="name"
                   className="block text-[14px] font-[500] text-[#474747] mb-[6px]"
                 >
-                  Full Name*
+                  Full Name
+                  <span className="text-[#F71D3B]">*</span>
                 </label>
                 <Input
                   id="name"
@@ -317,7 +335,7 @@ export default function LoginPage({
                 />
                 {validationErrors.name && (
                   <div className="mt-[6px]">
-                    <p className="text-[#535862] text-[14px] font-[400]">
+                    <p className="text-[#F71D3B] text-[14px] font-[400]">
                       {validationErrors.name}
                     </p>
                   </div>
@@ -330,7 +348,8 @@ export default function LoginPage({
                 htmlFor="email"
                 className="block text-[14px] font-[500] text-[#474747] mb-[6px]"
               >
-                Email*
+                Email
+                <span className="text-[#F71D3B]">*</span>
               </label>
               <Input
                 id="email"
@@ -344,7 +363,7 @@ export default function LoginPage({
               />
               {validationErrors.email && (
                 <div className="mt-[6px]">
-                  <p className="text-[#535862] text-[14px] font-[400]">
+                  <p className="text-[#F71D3B] text-[14px] font-[400]">
                     {validationErrors.email}
                   </p>
                 </div>
@@ -356,7 +375,8 @@ export default function LoginPage({
                 htmlFor="password"
                 className="block text-[14px] font-[500] text-[#474747] mb-[6px]"
               >
-                Password*
+                Password
+                <span className="text-[#F71D3B]">*</span>
               </label>
               <div className="relative">
                 <Input
@@ -383,7 +403,7 @@ export default function LoginPage({
               </div>
               {validationErrors.password && (
                 <div className="mt-[6px]">
-                  <p className="text-[#535862] text-[14px] font-[400]">
+                  <p className="text-[#F71D3B] text-[14px] font-[400]">
                     {validationErrors.password}
                   </p>
                 </div>
@@ -395,7 +415,8 @@ export default function LoginPage({
                   htmlFor="confirmPassword"
                   className="block text-[14px] font-[500] text-[#474747] mb-[6px]"
                 >
-                  Confirm Password*
+                  Confirm Password
+                  <span className="text-[#F71D3B]">*</span>
                 </label>
                 <div className="relative">
                   <Input
@@ -423,7 +444,7 @@ export default function LoginPage({
                 </div>
                 {validationErrors.confirmPassword && (
                   <div className="mt-[6px]">
-                    <p className="text-[#535862] text-[14px] font-[400]">
+                    <p className="text-[#F71D3B] text-[14px] font-[400]">
                       {validationErrors.confirmPassword}
                     </p>
                   </div>

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 export async function resetPassword(formData: FormData) {
   const supabase = await createClient();
-  const email = formData.get("email") as string;
+  const email = (formData.get("email") as string).trim();
 
   // Send password reset email
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -12,8 +12,11 @@ export async function resetPassword(formData: FormData) {
   });
 
   if (error) {
+    console.log("🚀 ~ resetPassword ~ error:", error)
     return redirect("/reset-password?error=Could not send reset email");
   }
 
-  return redirect("/reset-password?success=Check your email for a reset link");
+ return redirect(
+  "/reset-password?success=If your email is registered, a password reset link will be sent to your email. Check your inbox and spam folder."
+);
 }

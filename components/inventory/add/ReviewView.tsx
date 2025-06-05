@@ -30,7 +30,13 @@ const isImageFile = (url: string) => {
 export default function ReviewView({ images, currentImageIndex, onReorder, onRemove, onSelect, onAddMore, onContinue }: ReviewViewProps) {
   return (
     <div className="space-y-6">
-      <ImageCarousel images={images} currentIndex={currentImageIndex} onNavigate={onSelect} />
+      {images.length > 0 ? (
+        <ImageCarousel images={images} currentIndex={currentImageIndex} onNavigate={onSelect} />
+      ) : (
+        <div className="flex items-center justify-center h-48 bg-gray-900/50 backdrop-blur-sm rounded-xl">
+          <p className="text-gray-400">No images selected</p>
+        </div>
+      )}
       <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-4">
         <Reorder.Group axis="x" values={images} onReorder={onReorder} className="flex gap-3 overflow-x-auto py-2 px-1">
           {images.map((image, index) => (
@@ -68,8 +74,14 @@ export default function ReviewView({ images, currentImageIndex, onReorder, onRem
           <Camera className="mr-2 h-4 w-4" />
           Add More
         </Button>
-        <Button variant="outline" onClick={onContinue} className="flex-1">
+        <Button 
+          variant="outline" 
+          onClick={onContinue} 
+          className="flex-1"
+          disabled={images.length === 0}
+        >
           Continue to Details
+          {images.length === 0 && <span className="ml-2 text-xs text-gray-400">(Add at least one image)</span>}
         </Button>
       </div>
     </div>
