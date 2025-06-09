@@ -48,7 +48,8 @@ export default function ResetPasswordPage({
                 htmlFor="email"
                 className="block text-[14px] font-[500] text-[#474747] mb-[6px]"
               >
-                Email*
+                Email
+                <span className="text-[#F71D3B]">*</span>
               </label>
               <Input
                 id="email"
@@ -57,7 +58,7 @@ export default function ResetPasswordPage({
                 required
                 className={`h-12 mt-1 rounded-[12px] border-[#D5D7DA] text-[#474747] !bg-[#fff] focus:border-[#F71D3B] focus:outline-hidden placeholder:text-[#717680]
                 }`}
-                placeholder="Enter your work email"
+                placeholder="Enter your registered email address"
               />
             </div>
 
