@@ -14,6 +14,7 @@ import {
   Settings,
   LogOut,
   Link as LinkIcon,
+  MessageSquare,
 } from "lucide-react";
 import Image from "next/image";
 import { logout } from "@/app/login/actions";
@@ -102,6 +103,12 @@ export function Sidebar() {
       href: "/notifications",
       icon: Bell,
       badge: unreadCount > 0 ? unreadCount : null,
+      roles: ["store_owner", "user"],
+    },
+    {
+      name: "Messages",
+      href: "/messages",
+      icon: MessageSquare,
       roles: ["store_owner", "user"],
     },
     {
