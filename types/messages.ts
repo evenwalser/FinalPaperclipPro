@@ -19,7 +19,7 @@ export interface PaperclipMessage {
     listingId: string;
     price: number;
     isExpired: boolean;
-    status: "new" | "accepted" | "rejected" | "expired";
+    status: "new" | "accepted" | "declined" | "expired";
   };
   item?: {
     id: string;
@@ -110,7 +110,7 @@ export interface LocalMessage {
     listingId: string;
     price: number;
     isExpired: boolean;
-    status: "new" | "accepted" | "rejected" | "expired";
+    status: "new" | "accepted" | "declined" | "expired";
   };
   item?: {
     id: string;

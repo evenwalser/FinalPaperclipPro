@@ -286,7 +286,7 @@ export function useMessages() {
                           action === "accept"
                             ? "accepted"
                             : action === "decline"
-                            ? "rejected"
+                            ? "declined"
                             : "new",
                       },
                     }

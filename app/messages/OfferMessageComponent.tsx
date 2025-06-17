@@ -116,7 +116,7 @@ export const OfferMessageComponent: React.FC<OfferMessageProps> = ({
             Offer Accepted
           </Badge>
         )}
-        {offer?.status === "rejected" && (
+        {offer?.status === "declined" && (
           <Badge
             variant="secondary"
             className="mt-2 bg-red-700 text-white border-red-600"

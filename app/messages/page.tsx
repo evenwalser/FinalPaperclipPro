@@ -256,13 +256,13 @@ export default function MessagesPage() {
         <header className="sticky top-0 z-10 bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
           <div className="flex items-center justify-between h-16 px-4">
             <h1 className="text-xl font-semibold text-gray-100">Messages</h1>
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               className="text-gray-300 hover:text-gray-100 hover:bg-gray-700"
             >
               <MoreHorizontal className="w-5 h-5" />
-            </Button>
+            </Button> */}
           </div>
           <div className="px-4 pb-3">
             <div className="relative">
@@ -356,7 +356,7 @@ export default function MessagesPage() {
                   {selectedConversation?.user.name}
                 </h2>
               </div>
-              <div className="flex items-center gap-2">
+              {/* <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -371,7 +371,7 @@ export default function MessagesPage() {
                 >
                   <MoreHorizontal className="w-5 h-5" />
                 </Button>
-              </div>
+              </div> */}
             </div>
           </header>
 
