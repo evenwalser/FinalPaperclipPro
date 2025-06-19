@@ -396,8 +396,8 @@ export default function MessagesPage() {
                                       }))
                                   );
                                   await fetchConversations();
-                                  if (message.receiverId) {
-                                    await fetchMessages(message.receiverId);
+                                  if (activeConversation) {
+                                    await fetchMessages(activeConversation);
                                   }
                                 }}
                                 onDecline={async () => {
@@ -416,8 +416,8 @@ export default function MessagesPage() {
                                       "decline"
                                     );
                                     await fetchConversations();
-                                    if (message.receiverId) {
-                                      await fetchMessages(message.receiverId);
+                                    if (activeConversation) {
+                                      await fetchMessages(activeConversation);
                                     }
                                   } catch (err: any) {
                                     if (
@@ -746,8 +746,8 @@ export default function MessagesPage() {
                                         }))
                                     );
                                     await fetchConversations();
-                                    if (message.receiverId) {
-                                      await fetchMessages(message.receiverId);
+                                    if (activeConversation) {
+                                      await fetchMessages(activeConversation);
                                     }
                                   }}
                                   onDecline={async () => {
@@ -766,8 +766,8 @@ export default function MessagesPage() {
                                         "decline"
                                       );
                                       await fetchConversations();
-                                      if (message.receiverId) {
-                                        await fetchMessages(message.receiverId);
+                                      if (activeConversation) {
+                                        await fetchMessages(activeConversation);
                                       }
                                     } catch (err: any) {
                                       if (
