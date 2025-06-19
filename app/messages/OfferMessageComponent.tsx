@@ -12,6 +12,7 @@ interface OfferMessageProps {
   isMe: boolean;
   onAccept: () => Promise<void>;
   onDecline: () => Promise<void>;
+  isExpired?: boolean;
 }
 
 export const OfferMessageComponent: React.FC<OfferMessageProps> = ({
@@ -19,6 +20,7 @@ export const OfferMessageComponent: React.FC<OfferMessageProps> = ({
   isMe,
   onAccept,
   onDecline,
+  isExpired = false,
 }) => {
   const { offer, item } = message;
   const [isLoading, setIsLoading] = useState(false);
@@ -81,7 +83,9 @@ export const OfferMessageComponent: React.FC<OfferMessageProps> = ({
           Offer:{" "}
           <span className="font-medium text-[#FF3B30]">${offer?.price}</span>
         </p>
-        {offer?.status === "new" && !isMe && (
+        {isExpired ? (
+          <div className="text-red-500 font-semibold mt-4">This offer has expired.</div>
+        ) : offer?.status === "new" && !isMe ? (
           <div className="flex justify-end gap-2 mt-4">
             <Button
               variant="outline"
@@ -107,7 +111,7 @@ export const OfferMessageComponent: React.FC<OfferMessageProps> = ({
               Accept
             </Button>
           </div>
-        )}
+        ) : null}
         {offer?.status === "accepted" && (
           <Badge
             variant="secondary"

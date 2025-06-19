@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/client";
 import fetch from "node-fetch";
+import FormData from "form-data";
+import { Readable } from "stream";
 
 // Initialize Supabase client
 const supabase = createClient();
@@ -70,20 +72,60 @@ export async function GET(request: NextRequest) {
 // POST handler - send a message
 export async function POST(request: NextRequest) {
   try {
-    const payload = await request.json();
-    const { user, ...rest } = payload;
+    let payload;
+    let user;
+    let contentType = request.headers.get("content-type") || "";
+
+    // Handle FormData for file uploads
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      user = JSON.parse(formData.get("user") as string);
+
+      // Create a new FormData instance for the Paperclip API
+      const apiFormData = new FormData();
+
+      // Add text fields
+      apiFormData.append("receiverId", formData.get("receiverId"));
+      apiFormData.append("message", formData.get("message"));
+
+      if (formData.get("attachmentType")) {
+        apiFormData.append("attachmentType", formData.get("attachmentType"));
+      }
+
+      if (formData.get("attachmentItemId")) {
+        apiFormData.append(
+          "attachmentItemId",
+          formData.get("attachmentItemId")
+        );
+      }
+
+      // Handle multiple file uploads
+      const files = formData.getAll("attachmentImages");
+      for (const file of files) {
+        if (file instanceof Blob) {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          const stream = Readable.from(buffer);
+          // Use a unique field name for each file to ensure they're sent as an array
+          apiFormData.append("attachmentImages[]", stream, {
+            filename: (file as File).name,
+            contentType: file.type,
+          });
+        }
+      }
+
+      payload = apiFormData;
+    } else {
+      // Handle JSON payload
+      const jsonData = await request.json();
+      user = jsonData.user;
+      const { user: _, ...rest } = jsonData;
+      payload = rest;
+    }
 
     // Validate required fields
     if (!user || !user.id) {
       return NextResponse.json(
         { error: "User object with id is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!rest.userId || !rest.message) {
-      return NextResponse.json(
-        { error: "userId and message are required" },
         { status: 400 }
       );
     }
@@ -98,118 +140,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build the correct payload for Paperclip API
-    // The Paperclip API expects: { userId: string, message: string }
-    const paperclipPayload = {
-      receiverId: rest.userId,
-      message: rest.message,
-      // Add any additional fields that might be needed
-      ...(rest.attachment && { attachment: rest.attachment }),
-      ...(rest.isOffer && { isOffer: rest.isOffer }),
-      ...(rest.offerData && { offerData: rest.offerData }),
-    };
-
-    // Log the full request details
+    // Use the correct API endpoint
     const apiUrl = `${process.env.NEXT_PUBLIC_PAPERCLIP_API_URL}/v4/messages`;
-    const apiUrlAlt = `${process.env.NEXT_PUBLIC_PAPERCLIP_API_URL}/messages`;
 
-    // Test if the API endpoint is reachable
-    try {
-      const testResponse = await fetch(apiUrl, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${paperclipToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const testResponseAlt = await fetch(apiUrlAlt, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${paperclipToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-    } catch (testError) {
-      console.error("Test request failed:", testError);
-    }
-
-    // Try the main request
-    let response = await fetch(apiUrl, {
+    // Send request to Paperclip API
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${paperclipToken}`,
-        "Content-Type": "application/json",
+        ...(contentType.includes("multipart/form-data")
+          ? payload.getHeaders()
+          : { "Content-Type": "application/json" }),
       },
-      body: JSON.stringify(paperclipPayload),
+      body: contentType.includes("multipart/form-data")
+        ? payload
+        : JSON.stringify(payload),
     });
-
-    // If the first attempt fails, try the alternative URL
-    if (!response.ok && response.status === 404) {
-      response = await fetch(apiUrlAlt, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${paperclipToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(paperclipPayload),
-      });
-    }
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("Paperclip send message API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+      });
 
-      // Detailed logging for debugging
-      console.error("Paperclip send message API error:");
-      console.error("Status:", response.status);
-      console.error("Status Text:", response.statusText);
-      console.error("URL:", response.url);
-      console.error("Payload sent:", JSON.stringify(paperclipPayload, null, 2));
-      console.error("Raw error response:", errorText);
-
-      // Check if it's an HTML error page
-      if (
-        errorText.includes("<!DOCTYPE html>") ||
-        errorText.includes("<html")
-      ) {
-        console.error("Received HTML error page instead of JSON response");
-
-        // Try to extract more information from the HTML response
-        const titleMatch = errorText.match(/<title>(.*?)<\/title>/);
-        const title = titleMatch ? titleMatch[1] : "Unknown error";
-
-        return NextResponse.json(
-          {
-            error:
-              "Paperclip API returned an HTML error page. This usually indicates a server configuration issue or invalid endpoint.",
-            details: `Status: ${response.status}, URL: ${response.url}, Title: ${title}`,
-            rawError: errorText.substring(0, 500), // First 500 chars of the error
-          },
-          { status: 502 }
-        );
-      }
-
-      // Try to parse as JSON if it's not HTML
       try {
         const errorJson = JSON.parse(errorText);
         return NextResponse.json(
           {
             error:
               errorJson.error || errorJson.message || "Paperclip API error",
-            details: errorJson,
           },
           { status: response.status }
         );
       } catch {
-        // If it's not JSON either, return the raw text
-        throw new Error(`Paperclip API error ${response.status}: ${errorText}`);
+        return NextResponse.json(
+          { error: `Paperclip API error: ${errorText}` },
+          { status: response.status }
+        );
       }
     }
 
     const result = await response.json();
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {
-    console.error("Messages POST route error:", error.message || error);
+    console.error("Messages POST route error:", error);
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
       { status: 500 }

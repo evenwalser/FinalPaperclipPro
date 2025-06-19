@@ -78,15 +78,12 @@ export interface SendMessageResponse {
 }
 
 export interface SendMessageRequest {
-  userId: string;
+  receiverId: string;
   message: string;
-  attachment?: any;
-  isOffer?: boolean;
-  offerData?: {
-    listingId: string;
-    price: number;
-  };
-  user: PaperclipUser;
+  user: any;
+  attachmentType?: string;
+  attachmentImages?: (string | File)[] | null;
+  attachmentItemId?: string;
 }
 
 // Local types for the UI

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowUpRight,
   MessageSquare,
-  MoreHorizontal,
   PaperclipIcon,
   Search,
   Send,
@@ -19,11 +18,22 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { OfferMessageComponent } from "./OfferMessageComponent";
 import { useMessages } from "@/hooks/useMessages";
-import { LocalMessage } from "@/types/messages";
+import { LocalConversation, LocalMessage } from "@/types/messages";
+import { uploadAsset } from "@/lib/services/storage";
+import { v4 as uuidv4 } from "uuid";
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
 
-// Utility function to format dates in WhatsApp style
+function parseDateString(dateString: string): Date {
+  // Convert "2025-06-19 06:52:40" to "2025-06-19T06:52:40Z"
+  // If you want to treat it as UTC, add 'Z'
+  // If you want to treat it as local, just replace the space with 'T'
+  const isoString = dateString.replace(" ", "T") + "Z";
+  return new Date(isoString);
+}
+
 const formatMessageDate = (dateString: string) => {
-  const date = new Date(dateString);
+  const date = parseDateString(dateString);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
@@ -38,7 +48,8 @@ const formatMessageDate = (dateString: string) => {
   } else if (messageDate.getTime() === yesterday.getTime()) {
     return "Yesterday";
   } else {
-    return date.toLocaleDateString("en-US", {
+    // Use local time for formatting
+    return date.toLocaleDateString(undefined, {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -48,8 +59,8 @@ const formatMessageDate = (dateString: string) => {
 };
 
 const formatMessageTime = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString("en-US", {
+  const date = parseDateString(dateString);
+  return date.toLocaleTimeString(undefined, {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -83,128 +94,11 @@ const groupMessagesByDate = (messages: LocalMessage[]) => {
   return groups;
 };
 
-// Sample conversation data
-const conversations = [
-  {
-    id: "1",
-    name: "Jane Smith",
-    avatar: "/placeholder.svg?height=40&width=40",
-    lastMessage:
-      "Hi, I'm wondering about the condition of the antique vase you're selling. Are there any chips or cracks?",
-    time: "23/11/2024, 14:45",
-    unread: true,
-    messages: [
-      {
-        id: "m1",
-        sender: "Jane Smith",
-        content:
-          "Hi there! I'm interested in the antique vase you have listed.",
-        time: "23/11/2024, 14:30",
-        isMe: false,
-      },
-      {
-        id: "m2",
-        sender: "Jane Smith",
-        content:
-          "I'm wondering about the condition of the antique vase you're selling. Are there any chips or cracks?",
-        time: "23/11/2024, 14:45",
-        isMe: false,
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "Robert Johnson",
-    avatar: "/placeholder.svg?height=40&width=40",
-    lastMessage:
-      "Thanks for the information about the book. I'd like to purchase it.",
-    time: "22/11/2024, 10:15",
-    unread: true,
-    messages: [
-      {
-        id: "m1",
-        sender: "Robert Johnson",
-        content:
-          "Hello, I'm interested in the first edition book you have listed.",
-        time: "22/11/2024, 09:30",
-        isMe: false,
-      },
-      {
-        id: "m2",
-        sender: "You",
-        content:
-          "Hi Robert! Yes, it's still available. It's in excellent condition with no markings or damage to the pages.",
-        time: "22/11/2024, 09:45",
-        isMe: true,
-      },
-      {
-        id: "m3",
-        sender: "Robert Johnson",
-        content:
-          "Thanks for the information about the book. I'd like to purchase it.",
-        time: "22/11/2024, 10:15",
-        isMe: false,
-        type: "offer",
-        offerData: {
-          itemTitle: "Vintage Watch",
-          itemImage: "/placeholder.svg?height=80&width=80",
-          listedPrice: "£200",
-          offerPrice: "£150",
-          status: "pending",
-        },
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "Emily Davis",
-    avatar: "/placeholder.svg?height=40&width=40",
-    lastMessage: "Perfect! I'll be there at 3pm tomorrow to pick it up.",
-    time: "21/11/2024, 16:20",
-    unread: false,
-    messages: [
-      {
-        id: "m1",
-        sender: "Emily Davis",
-        content: "Hi, is the vintage record player still available?",
-        time: "21/11/2024, 15:30",
-        isMe: false,
-      },
-      {
-        id: "m2",
-        sender: "You",
-        content: "Yes, it's still available! Would you like to come see it?",
-        time: "21/11/2024, 15:45",
-        isMe: true,
-      },
-      {
-        id: "m3",
-        sender: "Emily Davis",
-        content: "That would be great. Are you available tomorrow afternoon?",
-        time: "21/11/2024, 16:00",
-        isMe: false,
-      },
-      {
-        id: "m4",
-        sender: "You",
-        content: "Yes, I'm free after 2pm tomorrow. Would that work for you?",
-        time: "21/11/2024, 16:10",
-        isMe: true,
-      },
-      {
-        id: "m5",
-        sender: "Emily Davis",
-        content: "Perfect! I'll be there at 3pm tomorrow to pick it up.",
-        time: "21/11/2024, 16:20",
-        isMe: false,
-      },
-    ],
-  },
-];
-
 export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   const {
     conversations,
@@ -214,7 +108,41 @@ export default function MessagesPage() {
     error,
     sendMessage,
     handleOfferAction,
+    uploading,
+    handleFileChange: originalHandleFileChange,
+    fileInputRef,
+    selectedFiles,
+    removeFile,
+    setConversations,
+    fetchConversations,
+    fetchMessages,
   } = useMessages();
+
+  // Wrap handleFileChange to create preview URLs
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    originalHandleFileChange(e);
+    const files = e.target.files;
+    if (files) {
+      const newUrls = Array.from(files).map((file) =>
+        URL.createObjectURL(file)
+      );
+      setPreviewUrls((prev) => [...prev, ...newUrls]);
+    }
+  };
+
+  // Remove a file and its preview
+  const handleRemoveFile = (index: number) => {
+    URL.revokeObjectURL(previewUrls[index]);
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+    removeFile(index);
+  };
+
+  // Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   const selectedConversation = conversations.find(
     (conv) => conv?.user?.userId === activeConversation
@@ -239,14 +167,22 @@ export default function MessagesPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim() && activeConversation) {
+    if (loading) return;
+    if (activeConversation && (newMessage.trim() || selectedFiles.length > 0)) {
       try {
         await sendMessage(activeConversation, newMessage.trim());
         setNewMessage("");
+        setPreviewUrls([]);
       } catch (error) {
         console.error("Failed to send message:", error);
+        alert("Failed to send message. Please try again.");
       }
     }
+  };
+
+  const handleEmojiSelect = (emoji: any) => {
+    setNewMessage((prev) => prev + (emoji.native || ""));
+    setShowEmojiPicker(false);
   };
 
   return (
@@ -426,20 +362,78 @@ export default function MessagesPage() {
                               <OfferMessageComponent
                                 message={message}
                                 isMe={message.userId === message.senderId}
+                                isExpired={message.isOfferExpired ?? false}
                                 onAccept={async () => {
-                                  console.log(
-                                    "Inside the accept handle offer action."
-                                  );
+                                  if (
+                                    message.isOfferExpired ||
+                                    message.offer?.status === "expired"
+                                  ) {
+                                    alert(
+                                      "This offer has expired and cannot be accepted."
+                                    );
+                                    return;
+                                  }
                                   await handleOfferAction(
                                     message?.item?.id || "",
                                     "accept"
                                   );
+                                  setConversations(
+                                    (prev: LocalConversation[]) =>
+                                      prev.map((conv: LocalConversation) => ({
+                                        ...conv,
+                                        messages: conv.messages.map(
+                                          (msg: LocalMessage) =>
+                                            msg.id === message.id && msg.offer
+                                              ? {
+                                                  ...msg,
+                                                  offer: {
+                                                    ...msg.offer,
+                                                    status: "accepted",
+                                                  },
+                                                }
+                                              : msg
+                                        ),
+                                      }))
+                                  );
+                                  await fetchConversations();
+                                  if (message.receiverId) {
+                                    await fetchMessages(message.receiverId);
+                                  }
                                 }}
                                 onDecline={async () => {
-                                  await handleOfferAction(
-                                    message?.item?.id || "",
-                                    "decline"
-                                  );
+                                  if (
+                                    message.isOfferExpired ||
+                                    message.offer?.status === "expired"
+                                  ) {
+                                    alert(
+                                      "This offer has expired and cannot be declined."
+                                    );
+                                    return;
+                                  }
+                                  try {
+                                    await handleOfferAction(
+                                      message?.item?.id || "",
+                                      "decline"
+                                    );
+                                    await fetchConversations();
+                                    if (message.receiverId) {
+                                      await fetchMessages(message.receiverId);
+                                    }
+                                  } catch (err: any) {
+                                    if (
+                                      err?.message
+                                        ?.toLowerCase()
+                                        .includes("expired")
+                                    ) {
+                                      alert(
+                                        "This offer has expired and cannot be declined."
+                                      );
+                                    } else {
+                                      alert(
+                                        "Failed to decline offer. Please try again."
+                                      );
+                                    }
+                                  }
                                 }}
                               />
                             ) : (
@@ -453,6 +447,24 @@ export default function MessagesPage() {
                                   )}
                                 >
                                   <p>{message.message}</p>
+                                  {message.attachment?.type === "image" && (
+                                    <div className="mt-2 grid grid-cols-2 gap-2">
+                                      {(
+                                        message.attachment?.images as string[]
+                                      ).map((image: string, index: number) => (
+                                        <div key={index} className="relative">
+                                          <img
+                                            src={image}
+                                            alt={`Attachment ${index + 1}`}
+                                            className="rounded-md w-full h-auto max-h-48 object-cover cursor-pointer"
+                                            onClick={() =>
+                                              window.open(image, "_blank")
+                                            }
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="mt-1 text-xs text-gray-400">
                                   {formatMessageTime(message.created)}
@@ -470,16 +482,64 @@ export default function MessagesPage() {
           </div>
 
           {/* Message Input */}
-          <div className="border-t border-gray-700 p-4 bg-gray-800/50 backdrop-blur-sm">
+          <div className="border-t border-gray-700 p-4 bg-gray-800/50 backdrop-blur-sm relative">
+            {/* File Previews */}
+            {previewUrls.length > 0 && (
+              <div className="p-2 border-b border-gray-700">
+                <div className="flex flex-wrap gap-2">
+                  {previewUrls.map((url, index) => (
+                    <div key={url} className="relative inline-block">
+                      <img
+                        src={url}
+                        alt={`Selected file ${index + 1}`}
+                        className="h-32 w-32 object-cover rounded-lg"
+                      />
+                      <button
+                        onClick={() => handleRemoveFile(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <form
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 p-4"
               onSubmit={handleSendMessage}
             >
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+                disabled={uploading}
+              />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                className={cn(
+                  "text-gray-400 hover:text-gray-200 hover:bg-gray-700",
+                  selectedFiles.length > 0 && "text-[#DC2626]"
+                )}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
               >
                 <PaperclipIcon className="w-5 h-5" />
               </Button>
@@ -489,20 +549,36 @@ export default function MessagesPage() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 className="flex-1 bg-gray-700/50 border-gray-600 text-gray-100 placeholder:text-gray-400 focus:border-[#DC2626] focus:ring-[#DC2626]"
                 disabled={loading}
+                onFocus={() => setShowEmojiPicker(false)}
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="text-gray-400 hover:text-gray-200 hover:bg-gray-700"
-              >
-                <Smile className="w-5 h-5" />
-              </Button>
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                  onClick={() => setShowEmojiPicker((v) => !v)}
+                  tabIndex={-1}
+                >
+                  <Smile className="w-5 h-5" />
+                </Button>
+                {showEmojiPicker && (
+                  <div className="absolute bottom-12 right-0 z-50">
+                    <Picker
+                      data={data}
+                      onEmojiSelect={handleEmojiSelect}
+                      theme="dark"
+                    />
+                  </div>
+                )}
+              </div>
               <Button
                 type="submit"
                 size="icon"
                 className="bg-[#DC2626] hover:bg-[#E6352B] text-white"
-                disabled={!newMessage.trim() || loading}
+                disabled={
+                  (!newMessage.trim() && selectedFiles.length === 0) || loading
+                }
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -514,7 +590,10 @@ export default function MessagesPage() {
           </div>
         </div>
       ) : error ? (
-        <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-900 to-gray-950">
+        <div
+          className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-900 to-gray-950 
+    w-[-webkit-fill-available]"
+        >
           <Card className="w-96 p-6 text-center shadow-lg bg-gray-800/80 backdrop-blur-sm border-gray-700">
             <div className="flex justify-center mb-4">
               <MessageSquare className="w-12 h-12 text-red-500" />
@@ -633,17 +712,78 @@ export default function MessagesPage() {
                                 <OfferMessageComponent
                                   message={message}
                                   isMe={message.userId === message.senderId}
+                                  isExpired={message.isOfferExpired ?? false}
                                   onAccept={async () => {
+                                    if (
+                                      message.isOfferExpired ||
+                                      message.offer?.status === "expired"
+                                    ) {
+                                      alert(
+                                        "This offer has expired and cannot be accepted."
+                                      );
+                                      return;
+                                    }
                                     await handleOfferAction(
-                                      message.id,
+                                      message?.item?.id || "",
                                       "accept"
                                     );
+                                    setConversations(
+                                      (prev: LocalConversation[]) =>
+                                        prev.map((conv: LocalConversation) => ({
+                                          ...conv,
+                                          messages: conv.messages.map(
+                                            (msg: LocalMessage) =>
+                                              msg.id === message.id && msg.offer
+                                                ? {
+                                                    ...msg,
+                                                    offer: {
+                                                      ...msg.offer,
+                                                      status: "accepted",
+                                                    },
+                                                  }
+                                                : msg
+                                          ),
+                                        }))
+                                    );
+                                    await fetchConversations();
+                                    if (message.receiverId) {
+                                      await fetchMessages(message.receiverId);
+                                    }
                                   }}
                                   onDecline={async () => {
-                                    await handleOfferAction(
-                                      message.id,
-                                      "decline"
-                                    );
+                                    if (
+                                      message.isOfferExpired ||
+                                      message.offer?.status === "expired"
+                                    ) {
+                                      alert(
+                                        "This offer has expired and cannot be declined."
+                                      );
+                                      return;
+                                    }
+                                    try {
+                                      await handleOfferAction(
+                                        message?.item?.id || "",
+                                        "decline"
+                                      );
+                                      await fetchConversations();
+                                      if (message.receiverId) {
+                                        await fetchMessages(message.receiverId);
+                                      }
+                                    } catch (err: any) {
+                                      if (
+                                        err?.message
+                                          ?.toLowerCase()
+                                          .includes("expired")
+                                      ) {
+                                        alert(
+                                          "This offer has expired and cannot be declined."
+                                        );
+                                      } else {
+                                        alert(
+                                          "Failed to decline offer. Please try again."
+                                        );
+                                      }
+                                    }
                                   }}
                                 />
                               ) : (
@@ -657,6 +797,29 @@ export default function MessagesPage() {
                                     )}
                                   >
                                     <p>{message.message}</p>
+                                    {message.attachment?.type === "image" && (
+                                      <div className="mt-2 grid grid-cols-2 gap-2">
+                                        {(
+                                          message.attachment?.images as string[]
+                                        ).map(
+                                          (image: string, index: number) => (
+                                            <div
+                                              key={index}
+                                              className="relative"
+                                            >
+                                              <img
+                                                src={image}
+                                                alt={`Attachment ${index + 1}`}
+                                                className="rounded-md w-full h-auto max-h-48 object-cover cursor-pointer"
+                                                onClick={() =>
+                                                  window.open(image, "_blank")
+                                                }
+                                              />
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                   <div className="mt-1 text-xs text-gray-400">
                                     {formatMessageTime(message.created)}
@@ -674,16 +837,30 @@ export default function MessagesPage() {
             </div>
 
             {/* Mobile Message Input */}
-            <div className="border-t border-gray-700 p-3 bg-gray-800/50 backdrop-blur-sm">
+            <div className="border-t border-gray-700 p-3 bg-gray-800/50 backdrop-blur-sm relative">
               <form
                 className="flex items-center gap-2"
                 onSubmit={handleSendMessage}
               >
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  ref={fileInputRef}
+                  style={{ display: "none" }}
+                  onChange={handleFileChange}
+                  disabled={uploading}
+                />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                  className={cn(
+                    "text-gray-400 hover:text-gray-200 hover:bg-gray-700",
+                    selectedFiles.length > 0 && "text-[#DC2626]"
+                  )}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
                 >
                   <PaperclipIcon className="w-5 h-5" />
                 </Button>
@@ -693,7 +870,29 @@ export default function MessagesPage() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   className="flex-1 bg-gray-700/50 border-gray-600 text-gray-100 placeholder:text-gray-400 focus:border-[#DC2626] focus:ring-[#DC2626]"
                   disabled={loading}
+                  onFocus={() => setShowEmojiPicker(false)}
                 />
+                <div className="relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                    onClick={() => setShowEmojiPicker((v) => !v)}
+                    tabIndex={-1}
+                  >
+                    <Smile className="w-5 h-5" />
+                  </Button>
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-12 right-0 z-50">
+                      <Picker
+                        data={data}
+                        onEmojiSelect={handleEmojiSelect}
+                        theme="dark"
+                      />
+                    </div>
+                  )}
+                </div>
                 <Button
                   type="submit"
                   size="icon"

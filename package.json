@@ -13,6 +13,8 @@
     "db:push": "supabase db push"
   },
   "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@radix-ui/react-accordion": "^1.2.3",
@@ -46,7 +48,7 @@
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "date-fns": "^3.6.0",
-    "form-data": "^4.0.2",
+    "form-data": "^4.0.3",
     "formdata-node": "^6.0.3",
     "formidable": "^3.5.4",
     "framer-motion": "^11.13.1",
