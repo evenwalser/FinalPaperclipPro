@@ -186,7 +186,7 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-900 to-gray-950">
+    <div className="flex h-screen bg-gradient-to-br from-gray-900 to-gray-950 overflow-y-hidden">
       {/* Conversations List */}
       <div className="w-full md:w-80 lg:w-96 border-r border-gray-700 bg-gray-800/50 backdrop-blur-sm flex flex-col">
         <header className="sticky top-0 z-10 bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
@@ -213,7 +213,7 @@ export default function MessagesPage() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="overflow-y-auto h-[calc(100vh-183px)]">
           {loading && conversations.length === 0 ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
@@ -312,7 +312,13 @@ export default function MessagesPage() {
           </header>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div
+            className={`overflow-y-auto p-4 space-y-4 overflow-hidden ${
+              previewUrls.length > 0
+                ? "h-[calc(100vh-375px)]"
+                : "h-[calc(100vh-235px)]"
+            }`}
+          >
             {loading ? (
               <div className="flex items-center justify-center h-32">
                 <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
@@ -485,14 +491,14 @@ export default function MessagesPage() {
           <div className="border-t border-gray-700 p-4 bg-gray-800/50 backdrop-blur-sm relative">
             {/* File Previews */}
             {previewUrls.length > 0 && (
-              <div className="p-2 border-b border-gray-700">
-                <div className="flex flex-wrap gap-2">
+              <div className="p-2 border-b border-gray-700 h-[145px] overflow-y-auto">
+                <div className="flex flex-wrap gap-3">
                   {previewUrls.map((url, index) => (
                     <div key={url} className="relative inline-block">
                       <img
                         src={url}
                         alt={`Selected file ${index + 1}`}
-                        className="h-32 w-32 object-cover rounded-lg"
+                        className="h-[120px] w-[120px] object-cover rounded-lg"
                       />
                       <button
                         onClick={() => handleRemoveFile(index)}
