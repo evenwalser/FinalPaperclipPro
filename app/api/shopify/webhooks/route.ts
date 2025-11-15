@@ -970,8 +970,9 @@ async function handleProductCreate(
   let logoUrl = "";
   if (vendor) {
     try {
-      const baseUrl =
-        "https://paperclipretail-git-development-project-retail-fa44f0e3.vercel.app";
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : 'http://localhost:3000');
       const logoResponse = await fetch(
         `${baseUrl}/api/logo-search?q=${encodeURIComponent(vendor)}`
       );
@@ -1430,8 +1431,9 @@ async function handleProductUpdate(
   let logoUrl = "";
   if (vendor) {
     try {
-      const baseUrl =
-        "https://paperclipretail-git-development-project-retail-fa44f0e3.vercel.app";
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : 'http://localhost:3000');
       const logoResponse = await fetch(
         `${baseUrl}/api/logo-search?q=${encodeURIComponent(vendor)}`
       );

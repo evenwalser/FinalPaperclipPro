@@ -8,8 +8,8 @@ const FormData = require('form-data');
 const axios = require('axios');
 
 // 1) CONFIGURE THESE:
-const WEBHOOK_URL = 'https://054d-2a09-bac5-3b0c-172d-00-24f-7.ngrok-free.app/api/webhooks/create-item';
-const WEBHOOK_SECRET = 'LlbFEjTDY2aLshEkzTb7gNiqaXbBR66pzVR32CoyGnNEDYr0hk';
+const WEBHOOK_URL = process.env.WEBHOOK_URL || 'YOUR_WEBHOOK_URL_HERE';
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'YOUR_WEBHOOK_SECRET_HERE';
 
 // Your "item_created" test payload:
 const payload = {
